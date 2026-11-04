@@ -66,8 +66,81 @@
     text-align: center;
   }
   .address b { font-weight: 300; color: var(--fg); }
+  .bar-right { justify-self: end; display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .help-btn {
+    font: inherit;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background: none;
+    color: var(--dim);
+    border: 0.5px solid var(--faint);
+    border-radius: 999px;
+    padding: 4px 11px;
+    cursor: pointer;
+  }
+  .help-btn:hover, .help-btn:focus-visible, .help-btn[aria-expanded="true"] { color: var(--fg); border-color: var(--frame); outline: none; }
+
+  /* ---------- how it works ---------- */
+  .howto {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 22px 44px 26px;
+    border-bottom: 0.5px solid var(--frame);
+  }
+  .howto-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .howto-close {
+    width: 28px;
+    height: 28px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1;
+    background: none;
+    color: var(--dim);
+    border: 0.5px solid var(--frame);
+    border-radius: 50%;
+    cursor: pointer;
+  }
+  .howto-close:hover, .howto-close:focus-visible { color: var(--fg); border-color: var(--fg); outline: none; }
+  .howto-steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 18px 24px;
+    counter-reset: step;
+  }
+  .howto-steps li {
+    counter-increment: step;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 0.5px solid var(--faint);
+    font-size: 12px;
+    line-height: 1.6;
+    color: var(--dim);
+  }
+  .howto-steps li::before {
+    content: counter(step, decimal-leading-zero);
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--fg);
+  }
+  .howto-steps b { font-weight: 400; color: var(--fg); }
+  @media (max-width: 1000px) { .howto-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) {
+    .howto { padding: 20px 16px 22px; }
+    .howto-steps { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  }
+
   .bar-meta {
-    justify-self: end;
     font-size: 10px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
@@ -86,7 +159,7 @@
   @media (max-width: 640px) {
     .app { padding: 28px 16px; }
     .bar-meta { display: none; }
-    .window-bar { grid-template-columns: auto minmax(0, 1fr); }
+    .window-bar { grid-template-columns: auto minmax(0, 1fr) auto; }
   }
   @media (min-width: 1120px) {
     .app { grid-template-columns: minmax(0, 480px) minmax(0, 1fr); }
@@ -247,8 +320,21 @@
     color: var(--faint);
     font-variant-numeric: tabular-nums;
   }
-  .arr .bar-head .ch { color: var(--dim); font-size: 10px; letter-spacing: 0; }
+  .arr .bar-head .ch { color: var(--dim); font-size: 10px; letter-spacing: 0; white-space: nowrap; }
   .arr .bar-head.ph .ch, .arr .bar-head.ph { color: var(--fg); }
+  @media (max-width: 640px) {
+    /* narrow bars: chord names run bottom-to-top so neighbours never touch */
+    .arr { grid-template-columns: 38px 74px repeat(12, minmax(0, 1fr)); column-gap: 1px; }
+    .arr .bar-head { align-self: end; }
+    .arr .bar-head .ch {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      height: 3.4em;
+      font-size: 9px;
+    }
+    .arr .part-name { font-size: 10px; letter-spacing: 0.08em; padding: 8px 4px; }
+    .arr .toggle { width: 34px; }
+  }
   .toggle {
     font: inherit;
     font-size: 9px;
@@ -355,8 +441,24 @@
 <div class="window-bar">
   <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
   <div class="address">keystroke-wave / <b>scene-12-bars</b></div>
-  <div class="bar-meta" id="barMeta">A · 120 BPM</div>
+  <div class="bar-right">
+    <span class="bar-meta" id="barMeta">A · 120 BPM</span>
+    <button class="help-btn" id="helpBtn" type="button" aria-controls="howto" aria-expanded="true">How it works</button>
+  </div>
 </div>
+<section class="howto" id="howto" aria-labelledby="howtoTitle">
+  <div class="howto-head">
+    <span class="eyebrow" id="howtoTitle">How it works</span>
+    <button class="howto-close" id="howtoClose" type="button" aria-label="Close how it works">×</button>
+  </div>
+  <ol class="howto-steps">
+    <li><span><b>Pick a part.</b> Under “Record into”, choose Drums, Synths, Piano, Percussion or Effects.</span></li>
+    <li><span><b>Write and listen.</b> Type or paste some text, then press Listen. Every letter is a sound.</span></li>
+    <li><span><b>It becomes a loop.</b> When the text finishes, it is saved as that part’s loop.</span></li>
+    <li><span><b>Fill the other parts.</b> Repeat for each part, then choose a tempo and chords.</span></li>
+    <li><span><b>Arrange and play.</b> Click bars to bring parts in or out, then press Play to hear all 12 bars.</span></li>
+  </ol>
+</section>
 <main class="app">
   <section class="reader" aria-label="Reader">
     <div class="stage" id="stage" tabindex="0" aria-label="Wave pad. Plays the text below, or type letters A to Z.">
@@ -373,7 +475,7 @@
     <textarea id="text" spellcheck="false" aria-label="Text to play" placeholder="Paste or write text to play">the quick brown fox jumps over the lazy dog</textarea>
 
     <div class="controls">
-      <button class="btn primary" id="play" type="button">Play</button>
+      <button class="btn primary" id="play" type="button">Listen</button>
       <label class="speed label" for="speed">Speed <input id="speed" type="range" min="2" max="16" step="1" value="8"> <output id="speedOut" for="speed">8</output>/s</label>
       <button class="btn" id="repeat" type="button" aria-pressed="false">Repeat</button>
       <button class="btn" id="reset" type="button">Reset</button>
@@ -1051,7 +1153,7 @@
     clearTimeout(timer);
     timer = null;
     playing = false;
-    playBtn.textContent = 'Play';
+    playBtn.textContent = 'Listen';
   }
 
   playBtn.addEventListener('click', () => (playing ? stop() : play()));
@@ -1365,7 +1467,7 @@
     if (!t.pattern) {
       const p = document.createElement('p');
       p.className = 'empty-state';
-      p.textContent = `Nothing recorded for ${part.label} yet. With ${sel + 1} ${part.label} selected, play some text. When it finishes it becomes this part's loop.`;
+      p.textContent = `Nothing recorded for ${part.label} yet. With ${sel + 1} ${part.label} selected, type some text and press Listen. When it finishes it becomes this part's loop.`;
       detailEl.append(p);
       return;
     }
@@ -1539,6 +1641,24 @@
       setStepPlayhead(pat && tracks[sel].bars[q.bar] ? (q.bar * 16 + q.s) % pat.len : -1);
     }
   }
+
+  // ---- how it works: open on first visit, remembered once closed ----
+  const howto = $('howto'), helpBtn = $('helpBtn');
+  const HELP_KEY = 'keystroke-wave-howto-closed';
+  function setHowto(open) {
+    howto.hidden = !open;
+    helpBtn.setAttribute('aria-expanded', String(open));
+    try { localStorage.setItem(HELP_KEY, open ? '0' : '1'); } catch (err) { /* this visit only */ }
+  }
+  let helpClosed = false;
+  try { helpClosed = localStorage.getItem(HELP_KEY) === '1'; } catch (err) { /* ignore */ }
+  howto.hidden = helpClosed;
+  helpBtn.setAttribute('aria-expanded', String(!helpClosed));
+  $('howtoClose').addEventListener('click', () => { setHowto(false); helpBtn.focus(); });
+  helpBtn.addEventListener('click', () => setHowto(howto.hidden));
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !howto.hidden) setHowto(false);
+  });
 
   // ---- keep the scene between visits (this browser only) ----
   const KEY = 'keystroke-wave-scene-v1';
