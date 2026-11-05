@@ -11,6 +11,12 @@
     --dim: rgba(255, 255, 255, 0.45);
     --faint: rgba(255, 255, 255, 0.18);
     --wash: rgba(255, 255, 255, 0.1);
+    /* part colours, in part order */
+    --cyan: #00e5ff;
+    --magenta: #ff2bd6;
+    --yellow: #ffe600;
+    --white: #ffffff;
+    --grey: #9a9a9a;
     --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
     color-scheme: dark;
   }
@@ -493,6 +499,23 @@
   .fresh { animation: fresh 1.4s ease-out; }
   @keyframes fresh { from { background: var(--wash); } to { background: transparent; } }
   @media (prefers-reduced-motion: reduce) { .fresh { animation: none; } }
+
+  /* ---------- part colours: each part keeps its colour everywhere it appears ---------- */
+  .chip.part { color: var(--pc); border-color: color-mix(in srgb, var(--pc) 45%, transparent); }
+  .chip.part:hover, .chip.part:focus-visible { border-color: var(--pc); }
+  .chip.part[aria-pressed="true"] { background: var(--pc); color: var(--bg); border-color: var(--pc); }
+  .readout .now { color: var(--pc, var(--fg)); border-bottom-color: var(--pc, var(--fg)); }
+  .arr .part-name { color: color-mix(in srgb, var(--pc) 65%, transparent); }
+  .arr .part-name:hover, .arr .part-name:focus-visible, .arr .part-name[aria-current="true"] { color: var(--pc); }
+  .arr .part-name[aria-current="true"]::after { background: var(--pc); }
+  .arr .toggle[aria-pressed="true"] { background: var(--pc); border-color: var(--pc); }
+  .bar-cell.on::before { background: var(--pc); }
+  .bar-cell.on.blank::before { background: none; border-color: color-mix(in srgb, var(--pc) 60%, transparent); }
+  .bar-cell.on.muted::before { background: color-mix(in srgb, var(--pc) 30%, transparent); }
+  .bar-cell.on.blank.muted::before { background: none; border-color: color-mix(in srgb, var(--pc) 25%, transparent); }
+  .detail .detail-title .eyebrow { color: var(--pc); }
+  .grid .cell.hit::before { background: var(--pc); }
+  .grid .cell.hit.alt::before { background: transparent; border-color: var(--pc); }
 </style>
 
 <div class="window">
@@ -1419,10 +1442,14 @@
     try { PARTS[partIdx].pads[pad].play(time, c, busFor(PARTS[partIdx])); } catch (err) { console.warn(err); }
   }
 
+  // part colours: CSS variables for the page, hex for the canvas
+  const PART_VARS = ['var(--cyan)', 'var(--magenta)', 'var(--yellow)', 'var(--white)', 'var(--grey)'];
+  const PART_HEX = ['#00e5ff', '#ff2bd6', '#ffe600', '#ffffff', '#9a9a9a'];
+
   // visuals only
-  function show(cell, name) {
+  function show(cell, name, color = PART_HEX[sel]) {
     const now = performance.now();
-    dots.push({ cell, name, born: now, dead: null });
+    dots.push({ cell, name, color, born: now, dead: null });
     const live = dots.filter(d => d.dead === null);
     if (live.length > LIFE) live[0].dead = now;
   }
@@ -1753,7 +1780,8 @@
     partChips.replaceChildren(...PARTS.map((p, i) => {
       const b = document.createElement('button');
       b.type = 'button';
-      b.className = 'chip';
+      b.className = 'chip part';
+      b.style.setProperty('--pc', PART_VARS[i]);
       b.setAttribute('aria-pressed', String(i === sel));
       const n = document.createElement('b');
       n.textContent = i + 1;
@@ -1761,6 +1789,7 @@
       b.addEventListener('click', () => selectPart(i));
       return b;
     }));
+    readout.style.setProperty('--pc', PART_VARS[sel]);
   }
 
   let barCols = [];
@@ -1786,6 +1815,7 @@
       const toggle = document.createElement('button');
       toggle.type = 'button';
       toggle.className = 'toggle';
+      toggle.style.setProperty('--pc', PART_VARS[i]);
       toggle.setAttribute('aria-pressed', String(t.on));
       toggle.setAttribute('aria-label', `${part.label} on or off`);
       toggle.textContent = t.on ? 'On' : 'Off';
@@ -1794,6 +1824,7 @@
       const name = document.createElement('button');
       name.type = 'button';
       name.className = 'part-name' + (i === freshPart && !reduce ? ' fresh' : '');
+      name.style.setProperty('--pc', PART_VARS[i]);
       name.setAttribute('aria-current', String(i === sel));
       const n = document.createElement('b');
       n.textContent = i + 1;
@@ -1806,6 +1837,7 @@
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.className = 'bar-cell' + (t.bars[b] ? ' on' : '') + (t.pattern ? '' : ' blank') + (t.on ? '' : ' muted');
+        cell.style.setProperty('--pc', PART_VARS[i]);
         cell.setAttribute('aria-pressed', String(t.bars[b]));
         cell.setAttribute('aria-label', `${part.label}, bar ${b + 1}`);
         cell.addEventListener('click', () => { t.bars[b] = !t.bars[b]; renderArrangement(); save(); });
@@ -1820,6 +1852,7 @@
   function renderDetail(fresh = false) {
     const part = PARTS[sel], t = tracks[sel];
     detailEl.replaceChildren();
+    detailEl.style.setProperty('--pc', PART_VARS[sel]);
     detailEl.classList.toggle('fresh', fresh && !reduce);
     if (fresh) setTimeout(() => detailEl.classList.remove('fresh'), 1500);
 
@@ -2007,7 +2040,7 @@
           const pad = t.pattern.lanes[lane.id][ps];
           if (pad !== null && pad !== undefined) {
             sound(i, pad, at, c);
-            hits.push({ pad, name: PARTS[i].pads[pad].name(c) });
+            hits.push({ pad, name: PARTS[i].pads[pad].name(c), color: PART_HEX[i] });
           }
         }
       });
@@ -2053,7 +2086,7 @@
     while (uiQueue.length && uiQueue[0].time <= audio.currentTime) {
       const q = uiQueue.shift();
       sceneBar = q.bar;
-      for (const h of q.hits) show(cellForIndex(h.pad), h.name);
+      for (const h of q.hits) show(cellForIndex(h.pad), h.name, h.color);
       setBarPlayhead(q.bar);
       const pat = tracks[sel].pattern;
       setStepPlayhead(pat && tracks[sel].bars[q.bar] ? (q.bar * 16 + q.s) % pat.len : -1);
@@ -2164,7 +2197,7 @@
     return d.dead === null ? a : a * (1 - clamp01((now - d.dead) / dur(FADE_OUT)));
   }
 
-  function pill(x, y, text) {
+  function pill(x, y, text, color) {
     ctx.font = '400 9px "IBM Plex Mono", ui-monospace, Menlo, monospace';
     const spacing = 1.2;
     const tw = ctx.measureText(text).width + spacing * (text.length - 1);
@@ -2180,7 +2213,7 @@
     ctx.lineTo(px + r, py + h);
     ctx.arc(px + r, py + r, r, Math.PI / 2, Math.PI * 1.5);
     ctx.closePath();
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = color;
     ctx.fill();
     ctx.fillStyle = '#000';
     ctx.textBaseline = 'middle';
@@ -2211,6 +2244,7 @@
     for (const p of pts) {
       const flash = Math.exp(-Math.max(0, now - p.d.born) / 260);
       ctx.globalAlpha = p.a * (0.1 + 0.5 * flash);
+      ctx.strokeStyle = p.d.color;
       const col = p.d.cell % GRID, row = Math.floor(p.d.cell / GRID);
       ctx.strokeRect(col * cs + 0.5, row * cs + 0.5, cs - 1, cs - 1);
     }
@@ -2219,6 +2253,7 @@
       const p1 = pts[i], p2 = pts[i + 1];
       const grow = ease(clamp01((now - p2.d.born) / dur(DRAW_IN)));
       ctx.globalAlpha = Math.min(p1.a, p2.d.dead === null ? 1 : p2.a);
+      ctx.strokeStyle = p2.d.color; // each line takes the colour of the sound it leads to
       ctx.beginPath();
       ctx.moveTo(p1.x, p1.y);
       ctx.lineTo(p1.x + (p2.x - p1.x) * grow, p1.y + (p2.y - p1.y) * grow);
@@ -2229,6 +2264,7 @@
       const b = clamp01((now - p.d.born) / BEAT);
       const swell = !reduce && b < 1 ? Math.sin(Math.PI * b) * Math.exp(-2.2 * b) * 9 : 0;
       ctx.globalAlpha = p.a;
+      ctx.fillStyle = ctx.strokeStyle = p.d.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, Math.max(0.5, 2.5 + swell), 0, Math.PI * 2);
       ctx.fill();
@@ -2244,7 +2280,7 @@
 
     for (const p of pts) {
       ctx.globalAlpha = p.a;
-      pill(p.x, p.y, p.d.name);
+      pill(p.x, p.y, p.d.name, p.d.color);
     }
     ctx.globalAlpha = 1;
   }
